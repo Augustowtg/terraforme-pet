@@ -1,0 +1,43 @@
+# Formatação, lint e testes no Linux a cada push na main, em PRs e na mão
+# (Actions → ci → Run workflow).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # O rust-toolchain.toml fixa a versão; o rustup a instala na primeira chamada.
+      - name: Toolchain
+        run: rustup show active-toolchain
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ci-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: Formatação
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Testes
+        run: cargo test

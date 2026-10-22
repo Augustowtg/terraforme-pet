@@ -1,0 +1,97 @@
+# Compila o `terraforme-pet` e publica uma Release do GitHub a cada tag `v*`.
+# O `terraforme plugin install pet` baixa daqui o asset
+# `terraforme-pet-<target>.tar.gz` (só o binário na raiz) e confere o `.sha256`,
+# então mantenha os nomes em sincronia.
+#
+# Só glibc: a janela (eframe/glow) faz `dlopen` de X11/Wayland/GL, o que não
+# funciona num binário musl estático. Ubuntu 22.04 para a glibc mínima ser a
+# mais antiga possível.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Tag confere com o Cargo.toml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versão
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::a tag $GITHUB_REF_NAME não bate com a versão $version do Cargo.toml"
+            exit 1
+          fi
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-22.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      # O rust-toolchain.toml fixa a versão; o rustup a instala na primeira chamada.
+      - name: Toolchain
+        run: rustup target add ${{ matrix.target }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ matrix.target }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Pacote
+        run: |
+          asset="terraforme-pet-${{ matrix.target }}.tar.gz"
+          tar -czf "$asset" -C "target/${{ matrix.target }}/release" terraforme-pet
+          sha256sum "$asset" > "$asset.sha256"
+          echo "ASSET=$asset" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            ${{ env.ASSET }}
+            ${{ env.ASSET }}.sha256
+
+  release:
+    name: Publica a Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "terraforme-pet ${GITHUB_REF_NAME#v}" \
+            --generate-notes
