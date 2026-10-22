@@ -12,7 +12,7 @@ name = "terraforme-pet"
 path = "src/main.rs"
 
 [dependencies]
-terraforme-core = { git = "https://github.com/Augustowtg/terraforme.git", branch = "main" }
+terraforme-core = { git = "https://github.com/Augustowtg/terraforme.git", branch = "feat/plugins" }
 
 # Só o Linux tem a janela por enquanto (o Windows está no ROADMAP.md do terraforme).
 [target.'cfg(target_os = "linux")'.dependencies]
