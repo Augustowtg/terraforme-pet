@@ -1,7 +1,7 @@
 [package]
 name = "terraforme-pet"
 description = "Janela flutuante com o mascote do terraforme"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.98"
 authors = ["Augusto Wesley"]
@@ -12,12 +12,24 @@ name = "terraforme-pet"
 path = "src/main.rs"
 
 [dependencies]
-terraforme-core = { git = "https://github.com/Augustowtg/terraforme.git", branch = "feat/plugins" }
+terraforme-core = { git = "https://github.com/Augustowtg/terraforme.git", branch = "main" }
 
-# Só o Linux tem a janela por enquanto (o Windows está no ROADMAP.md do terraforme).
-[target.'cfg(target_os = "linux")'.dependencies]
-eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow", "wayland", "x11"] }
+# A janela existe no Linux e no Windows (o macOS está no ROADMAP.md do terraforme).
+[target.'cfg(any(target_os = "linux", windows))'.dependencies]
+eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+eframe = { version = "0.37", default-features = false, features = ["wayland", "x11"] }
+
+# Janela sem a moldura do DWM (`src/windows.rs`).
+[target.'cfg(windows)'.dependencies]
+raw-window-handle = "0.6"
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Dwm",
+    "Win32_UI_WindowsAndMessaging",
+] }
 
 [dev-dependencies]
 serde_json = "1"

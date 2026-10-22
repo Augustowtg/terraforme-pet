@@ -2290,7 +2290,7 @@ dependencies = [
 [[package]]
 name = "terraforme-core"
 version = "0.25.0"
-source = "git+https://github.com/Augustowtg/terraforme.git?branch=feat%2Fplugins#32731d82fcb671562fc7c3b64dc6fd5dbd20b7de"
+source = "git+https://github.com/Augustowtg/terraforme.git?branch=main#67af3196a87935d9066bf3eee429ed451263dc52"
 dependencies = [
  "anyhow",
  "rusqlite",
@@ -2303,12 +2303,14 @@ dependencies = [
 
 [[package]]
 name = "terraforme-pet"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "eframe",
  "image",
+ "raw-window-handle",
  "serde_json",
  "terraforme-core",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

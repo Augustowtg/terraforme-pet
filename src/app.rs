@@ -239,6 +239,8 @@ impl eframe::App for Pet {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        #[cfg(windows)]
+        crate::windows::borderless(_frame);
         let ctx = ui.ctx().clone();
         let (instances, alert) = {
             let shared = self.shared.lock().unwrap();
