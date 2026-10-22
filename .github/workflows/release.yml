@@ -1,11 +1,11 @@
 # Compila o `terraforme-pet` e publica uma Release do GitHub a cada tag `v*`.
 # O `terraforme plugin install pet` baixa daqui o asset
-# `terraforme-pet-<target>.tar.gz` (só o binário na raiz) e confere o `.sha256`,
-# então mantenha os nomes em sincronia.
+# `terraforme-pet-<target>.tar.gz` (`.zip` no Windows; só o binário na raiz) e
+# confere o `.sha256`, então mantenha os nomes em sincronia.
 #
-# Só glibc: a janela (eframe/glow) faz `dlopen` de X11/Wayland/GL, o que não
-# funciona num binário musl estático. Ubuntu 22.04 para a glibc mínima ser a
-# mais antiga possível.
+# No Linux, só glibc: a janela (eframe/glow) faz `dlopen` de X11/Wayland/GL, o
+# que não funciona num binário musl estático. Ubuntu 22.04 para a glibc mínima
+# ser a mais antiga possível.
 name: release
 
 on:
@@ -44,6 +44,8 @@ jobs:
             os: ubuntu-22.04
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-22.04-arm
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -63,11 +65,23 @@ jobs:
         run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Pacote
+        if: runner.os != 'Windows'
         run: |
           asset="terraforme-pet-${{ matrix.target }}.tar.gz"
           tar -czf "$asset" -C "target/${{ matrix.target }}/release" terraforme-pet
           sha256sum "$asset" > "$asset.sha256"
           echo "ASSET=$asset" >> "$GITHUB_ENV"
+
+      # `.zip` com o `.exe` na raiz; o `.sha256` no formato do `sha256sum`.
+      - name: Pacote (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $asset = "terraforme-pet-${{ matrix.target }}.zip"
+          Compress-Archive -Path "target/${{ matrix.target }}/release/terraforme-pet.exe" -DestinationPath $asset
+          $hash = (Get-FileHash -Algorithm SHA256 $asset).Hash.ToLower()
+          [IO.File]::WriteAllText("$PWD/$asset.sha256", "$hash  $asset`n")
+          "ASSET=$asset" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
 
       - uses: actions/upload-artifact@v4
         with:

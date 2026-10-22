@@ -3,4 +3,4 @@ description = "Janela flutuante com o mascote do terraforme"
 bin = "terraforme-pet"
 repo = "Augustowtg/terraforme-pet"
 min_terraforme = "0.24.0"
-platforms = ["linux"]
+platforms = ["linux", "windows"]

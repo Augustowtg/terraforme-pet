@@ -1,5 +1,5 @@
-# Formatação, lint e testes no Linux a cada push na main, em PRs e na mão
-# (Actions → ci → Run workflow).
+# Formatação, lint e testes no Linux e no Windows a cada push na main, em PRs
+# e na mão (Actions → ci → Run workflow).
 name: ci
 
 on:
@@ -16,8 +16,12 @@ env:
 
 jobs:
   test:
-    name: ubuntu
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -31,7 +35,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ci-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml') }}
+          key: ci-${{ matrix.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml') }}
 
       - name: Formatação
         run: cargo fmt --all --check
